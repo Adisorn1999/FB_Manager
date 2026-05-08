@@ -16,6 +16,7 @@ router.post("/", auth, (req, res) => {
     temp_mail,
     bm,
     status,
+    remark
   } = req.body;
 
   const passwordHash = hash(password || "");
@@ -23,8 +24,8 @@ router.post("/", auth, (req, res) => {
 
   const sql = `
     INSERT INTO accounts
-    (username, password, password_hash, secret_code, email, email_password, email_password_hash, temp_mail, bm, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (username, password, password_hash, secret_code, email, email_password, email_password_hash, temp_mail, bm, status, remark)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `;
 
   db.query(
@@ -40,6 +41,7 @@ router.post("/", auth, (req, res) => {
       temp_mail,
       bm,
       status || "active",
+      remark ,
     ],
     (err) => {
       if (err) {
@@ -71,7 +73,9 @@ router.post("/check-duplicate", auth, (req, res) => {
     email,
     email_password,
     bm,
-    id, // เผื่อใช้ตอน edit (กันชนตัวเอง)
+    id,// เผื่อใช้ตอน edit (กันชนตัวเอง)
+    remark
+   
   } = req.body;
 
   const passwordHash = hash(password || "");
@@ -87,6 +91,7 @@ router.post("/check-duplicate", auth, (req, res) => {
       AND email_password_hash = ?
       AND bm = ?
       ${id ? "AND id != ?" : ""}
+      AND remark = ?
     LIMIT 1
   `;
 
@@ -97,6 +102,8 @@ router.post("/check-duplicate", auth, (req, res) => {
     email,
     emailPasswordHash,
     bm,
+    "active",
+    remark // Assuming "active" is the default value for remark
   ];
 
   if (id) params.push(id);
@@ -194,6 +201,7 @@ router.put("/:id", auth, (req, res) => {
     temp_mail,
     bm,
     status,
+    remark
   } = req.body;
 
   const sql = `
@@ -208,7 +216,8 @@ router.put("/:id", auth, (req, res) => {
       email_password_hash=?,
       temp_mail=?,
       bm=?,
-      status=?
+      status=?,
+      remark=?
     WHERE id=?
   `;
 
@@ -225,6 +234,7 @@ router.put("/:id", auth, (req, res) => {
       temp_mail,
       bm,
       status || "active",
+      remark  ,
       id,
     ],
     (err) => {

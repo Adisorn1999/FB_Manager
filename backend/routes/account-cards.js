@@ -26,17 +26,35 @@ router.post("/", auth, (req, res) => {
 });
 
 router.get("/account/:id", auth, (req, res) => {
+
   db.query(
-    `SELECT ac.*, c.number, c.exp, c.code
-     FROM account_cards ac
-     LEFT JOIN cards c ON ac.card_id = c.id
-     WHERE ac.account_id=?`,
+    `
+    SELECT 
+      c.id,
+      c.number,
+      c.exp,
+      c.code,
+      ac.payment_type
+
+    FROM account_cards ac
+
+    LEFT JOIN cards c 
+      ON ac.card_id = c.id
+
+    WHERE ac.account_id = ?
+    `,
     [req.params.id],
     (err, result) => {
-      if (err) return error(res, "Fetch failed", err);
+
+      if (err) {
+        return error(res, "Fetch failed", err);
+      }
+
       return success(res, result);
-    },
+
+    }
   );
+
 });
 // ================= DETAIL =================
 router.delete("/:id", auth, (req, res) => {
