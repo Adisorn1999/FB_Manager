@@ -1,21 +1,21 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const db = require('../config/db');
-const { encrypt, decrypt } = require('../utils/crypto');
-
+const db = require("../config/db");
+const { encrypt, decrypt } = require("../utils/crypto");
+const auth = require("../middleware/auth");
 
 // 🟢 CREATE
-router.post('/', (req, res) => {
+router.post("/", auth, (req, res) => {
   const { px_id, agen1, agen2, token, status } = req.body;
 
   if (!px_id) {
     return res.status(400).json({
       success: false,
-      message: 'px_id required'
+      message: "px_id required",
     });
   }
 
-  const encryptedToken = encrypt(token || '');
+  const encryptedToken = encrypt(token || "");
 
   const sql = `
     INSERT INTO pixels (px_id, agen1, agen2, token, status)
@@ -24,36 +24,31 @@ router.post('/', (req, res) => {
 
   db.query(
     sql,
-    [px_id, agen1, agen2, encryptedToken, status || 'active'],
+    [px_id, agen1, agen2, encryptedToken, status || "active"],
     (err) => {
       if (err) return res.status(500).json(err);
 
-      res.json({ success: true, message: 'Pixel created' });
-    }
+      res.json({ success: true, message: "Pixel created" });
+    },
   );
 });
-
 
 // 🟢 GET ALL (❗ไม่โชว์ token)
-router.get('/', (req, res) => {
-  db.query(
-    'SELECT * FROM pixels',
-    (err, result) => {
-      if (err) return res.status(500).json(err);
+router.get("/", auth, (req, res) => {
+  db.query("SELECT * FROM pixels", (err, result) => {
+    if (err) return res.status(500).json(err);
 
-      res.json({
-        success: true,
-        data: result
-      });
-    }
-  );
+    res.json({
+      success: true,
+      data: result,
+    });
+  });
 });
 
-
 // 🔍 GET ONE (decrypt token)
-router.get('/:id', (req, res) => {
+router.get("/:id", auth, (req, res) => {
   db.query(
-    'SELECT * FROM pixels WHERE id=?',
+    "SELECT * FROM pixels WHERE id=?",
     [req.params.id],
     (err, result) => {
       if (err) return res.status(500).json(err);
@@ -61,7 +56,7 @@ router.get('/:id', (req, res) => {
       if (result.length === 0) {
         return res.status(404).json({
           success: false,
-          message: 'Pixel not found'
+          message: "Pixel not found",
         });
       }
 
@@ -70,20 +65,19 @@ router.get('/:id', (req, res) => {
       try {
         px.token = decrypt(px.token);
       } catch {
-        px.token = 'ERROR';
+        px.token = "ERROR";
       }
 
       res.json({
         success: true,
-        data: px
+        data: px,
       });
-    }
+    },
   );
 });
 
-
 // 🟡 UPDATE
-router.put('/:id', (req, res) => {
+router.put("/:id", auth, (req, res) => {
   const { px_id, agen1, agen2, token, status } = req.body;
 
   const encryptedToken = token ? encrypt(token) : null;
@@ -105,14 +99,13 @@ router.put('/:id', (req, res) => {
     (err) => {
       if (err) return res.status(500).json(err);
 
-      res.json({ success: true, message: 'Pixel updated' });
-    }
+      res.json({ success: true, message: "Pixel updated" });
+    },
   );
 });
 
-
 // 🔴 DELETE (soft)
-router.delete('/:id', (req, res) => {
+router.delete("/:id", auth, (req, res) => {
   db.query(
     'UPDATE pixels SET status="inactive" WHERE id=?',
     [req.params.id],
@@ -120,7 +113,7 @@ router.delete('/:id', (req, res) => {
       if (err) return res.status(500).json(err);
 
       res.json({ success: true });
-    }
+    },
   );
 });
 

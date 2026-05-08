@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
-
+const auth = require('../middleware/auth');
 
 // 🟢 CREATE RELATION
-router.post('/', (req, res) => {
+router.post('/', auth, (req, res) => {
   const { account_id, page_id, pixel_id, status } = req.body;
 
   if (!account_id) {
     return res.status(400).json({
       success: false,
-      message: 'account_id required'
+      message: "account_id required"
     });
   }
 
@@ -21,18 +21,18 @@ router.post('/', (req, res) => {
 
   db.query(
     sql,
-    [account_id, page_id || null, pixel_id || null, status || 'active'],
+    [account_id, page_id || null, pixel_id || null, status || "active"],
     (err) => {
       if (err) return res.status(500).json(err);
 
-      res.json({ success: true, message: 'Relation created' });
+      res.json({ success: true, message: "Relation created" });
     }
   );
 });
 
 
 // 🟢 GET ALL (JOIN แล้ว)
-router.get('/', (req, res) => {
+router.get('/', auth, (req, res) => {
   const sql = `
     SELECT 
       r.id,
@@ -68,7 +68,7 @@ router.get('/', (req, res) => {
 
 
 // 🔴 DELETE
-router.delete('/:id', (req, res) => {
+router.delete('/:id', auth, (req, res) => {
   db.query(
     'DELETE FROM account_relations WHERE id=?',
     [req.params.id],

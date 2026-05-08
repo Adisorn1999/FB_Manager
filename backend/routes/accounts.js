@@ -1,12 +1,12 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const db = require('../config/db');
-const { encrypt, decrypt, hash } = require('../utils/crypto');
-
+const db = require("../config/db");
+const { encrypt, decrypt, hash } = require("../utils/crypto");
+const auth = require("../middleware/auth");
 // =========================
 // 🟢 CREATE ACCOUNT
 // =========================
-router.post('/', (req, res) => {
+router.post("/", auth, (req, res) => {
   const {
     username,
     password,
@@ -15,11 +15,11 @@ router.post('/', (req, res) => {
     email_password,
     temp_mail,
     bm,
-    status
+    status,
   } = req.body;
 
-  const passwordHash = hash(password || '');
-  const emailPasswordHash = hash(email_password || '');
+  const passwordHash = hash(password || "");
+  const emailPasswordHash = hash(email_password || "");
 
   const sql = `
     INSERT INTO accounts
@@ -31,40 +31,39 @@ router.post('/', (req, res) => {
     sql,
     [
       username,
-      encrypt(password || ''),
+      encrypt(password || ""),
       passwordHash,
-      encrypt(secret_code || ''),
+      encrypt(secret_code || ""),
       email,
-      encrypt(email_password || ''),
+      encrypt(email_password || ""),
       emailPasswordHash,
       temp_mail,
       bm,
-      status || 'active'
+      status || "active",
     ],
     (err) => {
       if (err) {
-
         // 🔥 สำคัญมาก (จับ duplicate จาก MySQL)
-        if (err.code === 'ER_DUP_ENTRY') {
+        if (err.code === "ER_DUP_ENTRY") {
           return res.status(400).json({
             success: false,
-            message: 'DUPLICATE'
+            message: "DUPLICATE",
           });
         }
 
         console.log(err);
         return res.status(500).json({
-          message: 'INSERT_ERROR'
+          message: "INSERT_ERROR",
         });
       }
 
       res.json({ success: true });
-    }
+    },
   );
 });
 // =========================
 // 🟡 CHECK DUPLICATE (ก่อนบันทึก)
-router.post('/check-duplicate', (req, res) => {
+router.post("/check-duplicate", auth, (req, res) => {
   const {
     username,
     password,
@@ -72,11 +71,11 @@ router.post('/check-duplicate', (req, res) => {
     email,
     email_password,
     bm,
-    id // เผื่อใช้ตอน edit (กันชนตัวเอง)
+    id, // เผื่อใช้ตอน edit (กันชนตัวเอง)
   } = req.body;
 
-  const passwordHash = hash(password || '');
-  const emailPasswordHash = hash(email_password || '');
+  const passwordHash = hash(password || "");
+  const emailPasswordHash = hash(email_password || "");
 
   const sql = `
     SELECT id FROM accounts
@@ -87,26 +86,26 @@ router.post('/check-duplicate', (req, res) => {
       AND email = ?
       AND email_password_hash = ?
       AND bm = ?
-      ${id ? 'AND id != ?' : ''}
+      ${id ? "AND id != ?" : ""}
     LIMIT 1
   `;
 
   const params = [
     username,
     passwordHash,
-    secret_code || '',
+    secret_code || "",
     email,
     emailPasswordHash,
-    bm
+    bm,
   ];
 
   if (id) params.push(id);
 
   db.query(sql, params, (err, result) => {
-    if (err) return res.status(500).json({ message: 'DB_ERROR' });
+    if (err) return res.status(500).json({ message: "DB_ERROR" });
 
     res.json({
-      duplicate: result.length > 0
+      duplicate: result.length > 0,
     });
   });
 });
@@ -114,14 +113,14 @@ router.post('/check-duplicate', (req, res) => {
 // =========================
 // 🟢 GET ALL
 // =========================
-router.get('/', (req, res) => {
+router.get("/", auth, (req, res) => {
   const { status, search } = req.query;
 
-  let sql = 'SELECT * FROM accounts WHERE 1=1';
+  let sql = "SELECT * FROM accounts WHERE 1=1";
   const params = [];
 
-  if (status && status !== 'all') {
-    sql += ' AND status = ?';
+  if (status && status !== "all") {
+    sql += " AND status = ?";
     params.push(status);
   }
 
@@ -134,14 +133,14 @@ router.get('/', (req, res) => {
     params.push(`%${search}%`, `%${search}%`, `%${search}%`);
   }
 
-  sql += ' ORDER BY id DESC';
+  sql += " ORDER BY id DESC";
 
   db.query(sql, params, (err, result) => {
     if (err) return res.status(500).json(err);
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   });
 });
@@ -149,15 +148,15 @@ router.get('/', (req, res) => {
 // =========================
 // 🔍 GET ONE (decrypt)
 // =========================
-router.get('/:id', (req, res) => {
+router.get("/:id", auth, (req, res) => {
   db.query(
-    'SELECT * FROM accounts WHERE id=?',
+    "SELECT * FROM accounts WHERE id=?",
     [req.params.id],
     (err, result) => {
       if (err) return res.status(500).json(err);
 
       if (result.length === 0) {
-        return res.status(404).json({ message: 'Not found' });
+        return res.status(404).json({ message: "Not found" });
       }
 
       const acc = result[0];
@@ -167,23 +166,23 @@ router.get('/:id', (req, res) => {
         acc.secret_code = decrypt(acc.secret_code);
         acc.email_password = decrypt(acc.email_password);
       } catch {
-        acc.password = 'ERROR';
-        acc.secret_code = 'ERROR';
-        acc.email_password = 'ERROR';
+        acc.password = "ERROR";
+        acc.secret_code = "ERROR";
+        acc.email_password = "ERROR";
       }
 
       res.json({
         success: true,
-        data: acc
+        data: acc,
       });
-    }
+    },
   );
 });
 
 // =========================
 // 🟡 UPDATE
 // =========================
-router.put('/:id', (req, res) => {
+router.put("/:id", auth, (req, res) => {
   const { id } = req.params;
 
   const {
@@ -194,7 +193,7 @@ router.put('/:id', (req, res) => {
     email_password,
     temp_mail,
     bm,
-    status
+    status,
   } = req.body;
 
   const sql = `
@@ -217,23 +216,22 @@ router.put('/:id', (req, res) => {
     sql,
     [
       username,
-      encrypt(password || ''),
-      hash(password || ''),
-      encrypt(secret_code || ''),
+      encrypt(password || ""),
+      hash(password || ""),
+      encrypt(secret_code || ""),
       email,
-      encrypt(email_password || ''),
-      hash(email_password || ''),
+      encrypt(email_password || ""),
+      hash(email_password || ""),
       temp_mail,
       bm,
-      status || 'active',
-      id
+      status || "active",
+      id,
     ],
     (err) => {
       if (err) {
-
-        if (err.code === 'ER_DUP_ENTRY') {
+        if (err.code === "ER_DUP_ENTRY") {
           return res.status(400).json({
-            message: 'DUPLICATE'
+            message: "DUPLICATE",
           });
         }
 
@@ -241,14 +239,14 @@ router.put('/:id', (req, res) => {
       }
 
       res.json({ success: true });
-    }
+    },
   );
 });
 
 // =========================
 // 🔴 DELETE
 // =========================
-router.delete('/:id', (req, res) => {
+router.delete("/:id", auth, (req, res) => {
   db.query(
     'UPDATE accounts SET status="inactive" WHERE id=?',
     [req.params.id],
@@ -256,7 +254,7 @@ router.delete('/:id', (req, res) => {
       if (err) return res.status(500).json(err);
 
       res.json({ success: true });
-    }
+    },
   );
 });
 

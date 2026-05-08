@@ -1,26 +1,26 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const db = require('../config/db');
-
+const db = require("../config/db");
+const auth = require("../middleware/auth");
 
 // ==============================
 // ➕ CREATE (ADD PAGE / PIXEL)
 // ==============================
-router.post('/', (req, res) => {
+router.post("/", auth, (req, res) => {
   const { account_id, page_id, pixel_id } = req.body;
 
   // ❌ validate
   if (!account_id) {
     return res.status(400).json({
       success: false,
-      message: 'account_id required'
+      message: "account_id required",
     });
   }
 
   if (!page_id && !pixel_id) {
     return res.status(400).json({
       success: false,
-      message: 'page_id or pixel_id required'
+      message: "page_id or pixel_id required",
     });
   }
 
@@ -40,13 +40,12 @@ router.post('/', (req, res) => {
     checkSql,
     [account_id, page_id || null, pixel_id || null],
     (err, result) => {
-
       if (err) return res.status(500).json(err);
 
       if (result.length > 0) {
         return res.status(400).json({
           success: false,
-          message: 'Duplicate ❌'
+          message: "Duplicate ❌",
         });
       }
 
@@ -61,12 +60,11 @@ router.post('/', (req, res) => {
         insertSql,
         [account_id, page_id || null, pixel_id || null],
         (err2, result2) => {
-
           // 🔥 กันซ้ำระดับ DB (สำคัญ)
-          if (err2 && err2.code === 'ER_DUP_ENTRY') {
+          if (err2 && err2.code === "ER_DUP_ENTRY") {
             return res.status(400).json({
               success: false,
-              message: 'Duplicate (DB) ❌'
+              message: "Duplicate (DB) ❌",
             });
           }
 
@@ -74,20 +72,18 @@ router.post('/', (req, res) => {
 
           res.json({
             success: true,
-            id: result2.insertId
+            id: result2.insertId,
           });
-        }
+        },
       );
-    }
+    },
   );
 });
-
 
 // ==============================
 // 📄 GET ALL (LIST)
 // ==============================
-router.get('/', (req, res) => {
-
+router.get("/", auth, (req, res) => {
   const sql = `
     SELECT 
       ar.id,
@@ -117,17 +113,15 @@ router.get('/', (req, res) => {
 
     res.json({
       success: true,
-      data: result
+      data: result,
     });
   });
 });
 
-
 // ==============================
 // 🔍 GET BY ACCOUNT
 // ==============================
-router.get('/account/:account_id', (req, res) => {
-
+router.get("/account/:account_id", auth, (req, res) => {
   const sql = `
     SELECT *
     FROM account_relations
@@ -135,64 +129,52 @@ router.get('/account/:account_id', (req, res) => {
     ORDER BY id DESC
   `;
 
-  db.query(
-    sql,
-    [req.params.account_id],
-    (err, result) => {
+  db.query(sql, [req.params.account_id], (err, result) => {
+    if (err) return res.status(500).json(err);
 
-      if (err) return res.status(500).json(err);
-
-      res.json({
-        success: true,
-        data: result
-      });
-    }
-  );
+    res.json({
+      success: true,
+      data: result,
+    });
+  });
 });
-
 
 // ==============================
 // ✏️ UPDATE STATUS
 // ==============================
-router.put('/:id', (req, res) => {
-
+router.put("/:id", auth, (req, res) => {
   const { status } = req.body;
 
   db.query(
     `UPDATE account_relations SET status=? WHERE id=?`,
-    [status || 'active', req.params.id],
+    [status || "active", req.params.id],
     (err) => {
-
       if (err) return res.status(500).json(err);
 
       res.json({
         success: true,
-        message: 'Updated'
+        message: "Updated",
       });
-    }
+    },
   );
 });
-
 
 // ==============================
 // ❌ DELETE (SOFT)
 // ==============================
-router.delete('/:id', (req, res) => {
-
+router.delete("/:id", auth, (req, res) => {
   db.query(
     `UPDATE account_relations SET status='inactive' WHERE id=?`,
     [req.params.id],
     (err) => {
-
       if (err) return res.status(500).json(err);
 
       res.json({
         success: true,
-        message: 'Removed'
+        message: "Removed",
       });
-    }
+    },
   );
 });
-
 
 module.exports = router;

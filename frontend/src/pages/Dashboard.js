@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-
+import toast from 'react-hot-toast';
 export default function Dashboard() {
-
+const [loading, setLoading] = useState(true);
   const [accounts, setAccounts] = useState([]);
   const [detail, setDetail] = useState(null);
 
@@ -21,36 +21,34 @@ export default function Dashboard() {
   const [selected, setSelected] = useState('');
   const [editForm, setEditForm] = useState({});
 
-  const [alertModal, setAlertModal] = useState(null);
+
 
   // ================= ALERT =================
   const showSuccess = (msg) => {
-    setAlertModal({ type: 'success', message: msg });
-    setTimeout(() => setAlertModal(null), 1500);
-  };
+  toast.success(msg);
+};
 
-  const showError = (msg) => {
-
-  setAlertModal({
-    type: 'error',
-    message: msg
-  });
-
-  setTimeout(() => {
-    setAlertModal(null);
-  }, 1500);
-
+const showError = (msg) => {
+  toast.error(msg);
 };
   // ================= LOAD =================
   const fetchAccounts = async () => {
     const res = await api.get('/dashboard');
     setAccounts(res.data.data || []);
+    setLoading(false);
   };
+  
 
   useEffect(() => {
     fetchAccounts();
   }, []);
-
+if (loading) {
+  return (
+    <div className="flex justify-center items-center h-[300px]">
+      <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500"></div>
+    </div>
+  );
+}
   // ================= DETAIL =================
   const openDetail = async (acc) => {
   if (!acc?.id) return;
@@ -520,22 +518,7 @@ return (
       </Modal>
     )}
 
-    {/* ALERT */}
-    {alertModal && (
-      <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
-
-        <div
-          className={`p-6 rounded text-white ${
-            alertModal.type === 'success'
-              ? 'bg-green-500'
-              : 'bg-red-500'
-          }`}
-        >
-          {alertModal.message}
-        </div>
-
-      </div>
-    )}
+    
 
   </div>
 );
@@ -582,7 +565,7 @@ const Row = ({ label, value, isPassword }) => {
   const copyText = async () => {
     try {
       await navigator.clipboard.writeText(value || '');
-      alert('คัดลอกแล้ว');
+      toast.success("คัดลอกแล้ว 📋");
     } catch (err) {
       console.log(err);
     }

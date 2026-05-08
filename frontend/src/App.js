@@ -1,28 +1,22 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+import Login from "./pages/Login";
 
-import Login from './pages/Login';
+import Dashboard from "./pages/Dashboard";
+import Accounts from "./pages/Accounts";
+import Pages from "./pages/Pages";
+import Pixels from "./pages/Pixels";
+import Cards from "./pages/Cards";
 
-import Dashboard from './pages/Dashboard';
-import Accounts from './pages/Accounts';
-import Pages from './pages/Pages';
-import Pixels from './pages/Pixels';
-import Cards from './pages/Cards';
-
-import Layout from './components/Layout';
-import ProtectedRoute from './components/ProtectedRoute';
+import Layout from "./components/Layout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-
   return (
     <BrowserRouter>
-
       <Routes>
-
         {/* LOGIN */}
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        <Route path="/login" element={<Login />} />
 
         {/* DASHBOARD */}
         <Route
@@ -85,13 +79,9 @@ function App() {
         />
 
         {/* DEFAULT */}
-        <Route
-          path="*"
-          element={<Navigate to="/dashboard" replace />}
-        />
-
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-
+      <Toaster position="top-right" />
     </BrowserRouter>
   );
 }
