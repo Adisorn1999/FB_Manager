@@ -155,8 +155,8 @@ export default function Dashboard() {
       }
 
       if (res?.data?.success) {
-        showSuccess(res.data.message);
-
+        // showSuccess(res.data.message);
+        showSuccess(`${type} added ✅`);
         const acc = addModal;
         setAddModal(null);
         openDetail(acc);
@@ -180,7 +180,7 @@ export default function Dashboard() {
       }
 
       if (t === "card") {
-        await api.delete(`/account-cards/${item.id}`);
+        await api.delete(`/account-cards/${item.relation_id}`);
       }
 
       showSuccess("ลบสำเร็จ 🗑");
@@ -234,6 +234,29 @@ export default function Dashboard() {
     }
   };
 
+  const updatePaymentType = async (
+  id,
+  payment_type
+) => {
+
+  try {
+
+    await api.put(
+      `/account-cards/${id}/payment-type`,
+      { payment_type }
+    );
+
+    toast.success("อัปเดตสำเร็จ ✅");
+
+    openDetail(detail);
+
+  } catch (err) {
+
+    toast.error("อัปเดตไม่สำเร็จ ❌");
+
+  }
+
+};
   return (
     <div className="p-6 bg-gray-100 min-h-screen">
       {/* HEADER */}
@@ -345,6 +368,9 @@ export default function Dashboard() {
             title="Cards"
             data={accountCards}
             field="number"
+            type="card"
+            reloadDetail={() => openDetail(detail)}
+            updatePaymentType={updatePaymentType}
             onRemove={(i) => removeItem(i, "card")}
           />
         </Modal>
@@ -546,36 +572,33 @@ export default function Dashboard() {
 // ================= COMPONENT =================
 
 const Modal = ({ children, onClose }) => {
-  useEffect(() => {
-    const handleKey = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    window.addEventListener("keydown", handleKey);
-
-    return () => {
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 flex items-center justify-center bg-black/50"
-      onClick={onClose} // 🔥 คลิกพื้นหลัง = ปิด
-    >
+    useEffect(() => {
+      const handleKey = (e) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      };
+      window.addEventListener("keydown", handleKey);
+      return () => {
+        window.removeEventListener("keydown", handleKey);
+      };
+    }, [onClose]);
+    return (
       <div
-        className="bg-white p-8 rounded-xl shadow-lg relative w-full max-w-4xl max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()} // 🔥 กันคลิกทะลุ
+        className="fixed inset-0 flex items-center justify-center bg-black/50"
+        onClick={onClose} // 🔥 คลิกพื้นหลัง = ปิด
       >
-        <button onClick={onClose} className="absolute right-2 top-2">
-          ✖
-        </button>
-        {children}
+        <div
+          className="bg-white p-8 rounded-xl shadow-lg relative w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()} // 🔥 กันคลิกทะลุ
+        >
+          <button onClick={onClose} className="absolute right-2 top-2">
+            ✖
+          </button>
+          {children}
+        </div>
       </div>
-    </div>
-  );
+    );
 };
 
 const Row = ({ label, value, isPassword }) => {
@@ -584,7 +607,7 @@ const Row = ({ label, value, isPassword }) => {
   const copyText = async () => {
     try {
       await navigator.clipboard.writeText(value || "");
-      toast.success("คัดลอกแล้ว 📋");
+      //toast.success("คัดลอกแล้ว 📋");
     } catch (err) {
       console.log(err);
     }
@@ -614,16 +637,54 @@ const Row = ({ label, value, isPassword }) => {
   );
 };
 
-const ListSection = ({ title, data, field, onRemove }) => (
+const ListSection = ({ title, data, field, onRemove, type, reloadDetail, updatePaymentType }) => (
   <div className="mt-3">
-    <div className="font-bold">{title}</div>
+    <div className="font-bold mb-2">{title}</div>
 
     {data.map((i) => (
-      <div key={i.id} className="flex justify-between text-sm">
-        <span>{i[field]}</span>
-        <button onClick={() => onRemove(i)} className="text-red-500">
-          ลบ
-        </button>
+      <div
+        key={i.relation_id}
+        className="flex justify-between items-center text-sm border-b py-2"
+      >
+        <div>
+          <div>{i[field]}</div>
+
+          {type === "card" && (
+            <div className="text-xs text-gray-500 mt-1">
+              Payment: {i.payment_type || "-"}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {type === "card" && (
+            <select
+              value={i.payment_type || "backup"}
+              onChange={(e) => {
+                const value = e.target.value;
+
+                const ok = window.confirm(
+                  `เปลี่ยน Payment Type เป็น "${value}" ?`,
+                );
+
+                if (!ok) return;
+
+                updatePaymentType(i.relation_id, value);
+              }}
+              className="border rounded px-2 py-1 text-xs"
+            >
+              <option value="main">Main</option>
+
+              <option value="backup">Backup</option>
+
+              <option value="die">Die</option>
+            </select>
+          )}
+
+          <button onClick={() => onRemove(i)} className="text-red-500">
+            ลบ
+          </button>
+        </div>
       </div>
     ))}
   </div>

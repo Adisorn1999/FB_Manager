@@ -24,17 +24,18 @@ router.post("/", auth, (req, res) => {
     },
   );
 });
-
+// ================= LIST =================
 router.get("/account/:id", auth, (req, res) => {
 
   db.query(
     `
-    SELECT 
-      c.id,
-      c.number,
-      c.exp,
-      c.code,
-      ac.payment_type
+    SELECT
+  ac.id as relation_id,
+  c.id as card_id,
+  c.number,
+  c.exp,
+  c.code,
+  ac.payment_type
 
     FROM account_cards ac
 
@@ -56,6 +57,106 @@ router.get("/account/:id", auth, (req, res) => {
   );
 
 });
+// ================= UPDATE PAYMENT TYPE =================
+router.put("/:id/payment-type", auth, (req, res) => {
+
+  const { payment_type } = req.body;
+
+  // หา row ปัจจุบันก่อน
+  db.query(
+    `
+    SELECT *
+    FROM account_cards
+    WHERE id = ?
+    `,
+    [req.params.id],
+    (err, rows) => {
+
+      if (err) {
+        return error(res, "Fetch failed", err);
+      }
+
+      if (rows.length === 0) {
+        return error(res, "Card not found", null, 404);
+      }
+
+      const current = rows[0];
+
+      // ถ้าจะตั้ง main
+      if (payment_type === "main") {
+
+        db.query(
+          `
+          UPDATE account_cards
+          SET payment_type = 'backup'
+          WHERE account_id = ?
+          AND payment_type = 'main'
+          `,
+          [current.account_id],
+          (err2) => {
+
+            if (err2) {
+              return error(res, "Update failed", err2);
+            }
+
+            // set main ใบใหม่
+            db.query(
+              `
+              UPDATE account_cards
+              SET payment_type = ?
+              WHERE id = ?
+              `,
+              [payment_type, req.params.id],
+              (err3) => {
+
+                if (err3) {
+                  return error(res, "Update failed", err3);
+                }
+
+                return success(
+                  res,
+                  null,
+                  "Updated"
+                );
+
+              }
+            );
+
+          }
+        );
+
+      } else {
+
+        // backup / die
+        db.query(
+          `
+          UPDATE account_cards
+          SET payment_type = ?
+          WHERE id = ?
+          `,
+          [payment_type, req.params.id],
+          (err4) => {
+
+            if (err4) {
+              return error(res, "Update failed", err4);
+            }
+
+            return success(
+              res,
+              null,
+              "Updated"
+            );
+
+          }
+        );
+
+      }
+
+    }
+  );
+
+});
+
 // ================= DETAIL =================
 router.delete("/:id", auth, (req, res) => {
   db.query("DELETE FROM account_cards WHERE id = ?", [req.params.id], (err) => {

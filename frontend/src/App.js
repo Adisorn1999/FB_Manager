@@ -81,7 +81,7 @@ function App() {
         {/* DEFAULT */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-      <Toaster position="top-right" />
+      <Toaster position="top-center" />
     </BrowserRouter>
   );
 }
