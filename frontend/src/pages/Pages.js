@@ -1,312 +1,780 @@
-import { useEffect, useState } from 'react';
-import api from '../api/axios';
+import { useEffect, useState } from "react";
+import api from "../api/axios";
+import Swal from "sweetalert2";
+import toast from "react-hot-toast";
 
+// ================= MODAL =================
+const Modal = ({ children, onClose }) => {
+
+  useEffect(() => {
+
+    const handleKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+
+    window.addEventListener("keydown", handleKey);
+
+    return () => {
+      window.removeEventListener("keydown", handleKey);
+    };
+
+  }, [onClose]);
+
+  return (
+    <div
+      onClick={onClose}
+      className="
+        fixed inset-0 z-50
+        flex items-center justify-center
+        bg-black/70 backdrop-blur-sm
+      "
+    >
+
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="
+          bg-gray-900
+          border border-gray-700
+          rounded-3xl
+          p-8
+          w-full
+          max-w-2xl
+          relative
+          shadow-2xl
+        "
+      >
+
+        <button
+          onClick={onClose}
+          className="
+            absolute top-4 right-4
+            text-white/50 hover:text-white
+          "
+        >
+          ✕
+        </button>
+
+        {children}
+
+      </div>
+    </div>
+  );
+};
+
+// ================= STATUS =================
+const STATUS_STYLE = {
+  active:
+    "bg-green-500/10 text-green-400 border border-green-500/20",
+
+  page_die:
+    "bg-red-500/10 text-red-400 border border-red-500/20",
+};
+
+// ================= MAIN =================
 export default function Pages() {
+
+  const LIMIT = 9;
+
   const [data, setData] = useState([]);
-  const [search, setSearch] = useState('');
-  const [tab, setTab] = useState('all'); // 🔥 tabs
+
+  const [search, setSearch] = useState("");
+
+  const [tab, setTab] = useState("all");
+
   const [page, setPage] = useState(1);
 
   const [openModal, setOpenModal] = useState(false);
+
   const [editingId, setEditingId] = useState(null);
+
   const [form, setForm] = useState({});
 
-  const [toast, setToast] = useState('');
+  // ================= FETCH =================
+  const fetchData = async () => {
 
-  const pageSize = 20;
+    try {
 
-  // ======================
-  // TOAST
-  // ======================
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(''), 1500);
-  };
+      const res = await api.get("/pages", {
+        params: { search },
+      });
 
-  // ======================
-  // FETCH
-  // ======================
-  const fetchData = () => {
-    api.get('/pages', { params: { search } })
-      .then(res => setData(res.data.data || []))
-      .catch(console.error);
+      setData(res.data.data || []);
+
+    } catch (err) {
+
+      console.error(err);
+
+    }
+
   };
 
   useEffect(() => {
+
     fetchData();
+
+    setPage(1);
+
   }, [search]);
 
-  // reset page when tab changes
-  useEffect(() => {
-    setPage(1);
-  }, [tab]);
+  // ================= FILTER =================
+  const filtered = data.filter((row) => {
 
-  // ======================
-  // FILTER (tabs)
-  // ======================
-  const filtered = data.filter(row => {
-    if (tab === 'all') return true;
-    return (row.status || 'page_die') === tab;
+    if (tab === "all") return true;
+
+    return (row.status || "page_die") === tab;
+
   });
 
-  // ======================
-  // PAGINATION
-  // ======================
-  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+  // ================= PAGINATION =================
+  const totalPages =
+    Math.ceil(filtered.length / LIMIT) || 1;
 
   const paginated = filtered.slice(
-    (page - 1) * pageSize,
-    page * pageSize
+    (page - 1) * LIMIT,
+    page * LIMIT
   );
 
-  // ======================
-  // ADD
-  // ======================
-  const openAdd = () => {
+  // ================= ADD =================
+  const openAdd = async () => {
+
+    const result = await Swal.fire({
+      title: "Add Page ?",
+      icon: "question",
+      showCancelButton: true,
+
+      background: "#0f172a",
+      color: "#fff",
+    });
+
+    if (!result.isConfirmed) return;
+
     setForm({
-      page_id: '',
-      page_name: '',
-      agen: '',
-      status: 'active',
-      remark: ''
+      page_id: "",
+      page_name: "",
+      agen: "",
+      status: "active",
+      remark: "",
     });
 
     setEditingId(null);
+
     setOpenModal(true);
+
   };
 
-  // ======================
-  // EDIT
-  // ======================
+  // ================= EDIT =================
   const openEdit = async (row) => {
+
+    const result = await Swal.fire({
+      title: "Edit Page ?",
+      icon: "question",
+      showCancelButton: true,
+
+      background: "#0f172a",
+      color: "#fff",
+    });
+
+    if (!result.isConfirmed) return;
+
     const res = await api.get(`/pages/${row.id}`);
+
     setForm(res.data.data);
+
     setEditingId(row.id);
+
     setOpenModal(true);
+
   };
 
-  // ======================
-  // SAVE
-  // ======================
+  // ================= SAVE =================
   const handleSave = async () => {
+
     try {
+
       if (editingId) {
-        await api.put(`/pages/${editingId}`, form);
+
+        await api.put(
+          `/pages/${editingId}`,
+          form
+        );
+
       } else {
-        await api.post('/pages', form);
+
+        await api.post("/pages", form);
+
       }
 
       setOpenModal(false);
+
       fetchData();
-      showToast('Saved ✅');
+
+      toast.success("Saved ✅");
 
     } catch {
-      showToast('Error ❌');
+
+      toast.error("Error ❌");
+
     }
+
   };
 
-  // ======================
-  // DELETE
-  // ======================
-  const handleDelete = (id) => {
-    if (!window.confirm('Delete?')) return;
+  // ================= DELETE =================
+  const handleDelete = async (id) => {
 
-    api.delete(`/pages/${id}`)
-      .then(() => {
-        fetchData();
-        showToast('Deleted ✅');
-      });
+    const result = await Swal.fire({
+      title: "Delete Page ?",
+      icon: "warning",
+      showCancelButton: true,
+
+      background: "#0f172a",
+      color: "#fff",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+
+      await api.delete(`/pages/${id}`);
+
+      fetchData();
+
+      toast.success("Deleted ✅");
+
+    } catch {
+
+      toast.error("Delete Failed ❌");
+
+    }
+
   };
 
-  // ======================
-  // COPY
-  // ======================
+  // ================= COPY =================
   const autoCopy = (row) => {
-  const text = `${row.page_id}|${row.agen}`;
 
-  navigator.clipboard.writeText(text);
-  showToast('Copied 🔥');
-};
+    const text =
+      `${row.page_id}|${row.agen}`;
+
+    navigator.clipboard.writeText(text);
+
+    toast.success("Copied 🔥");
+
+  };
+
+  const TABS = [
+    {
+      key: "all",
+      label: "All",
+      emoji: "📋",
+    },
+
+    {
+      key: "active",
+      label: "Active",
+      emoji: "✅",
+    },
+
+    {
+      key: "page_die",
+      label: "Page Die",
+      emoji: "💀",
+    },
+  ];
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <div className="p-6 min-h-screen bg-gray-950 text-white">
 
       {/* HEADER */}
-      <div className="flex justify-between mb-4">
-        <h1 className="text-3xl font-bold">Pages</h1>
+      <div className="flex items-center justify-between mb-8">
+
+        <div>
+
+          <h1 className="text-4xl font-black">
+            Pages
+          </h1>
+
+          <p className="text-white/50 mt-1 text-sm">
+            {filtered.length} pages found
+          </p>
+
+        </div>
 
         <button
           onClick={openAdd}
-          className="bg-blue-600 text-white px-4 py-2 rounded"
+          className="
+            bg-blue-600 hover:bg-blue-500
+            text-white
+            px-5 py-3
+            rounded-2xl
+            font-bold
+            transition
+          "
         >
           + Add Page
         </button>
+
       </div>
 
       {/* SEARCH */}
-      <input
-        placeholder="Search page..."
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        className="w-full p-3 mb-4 border rounded"
-      />
+      <div className="mb-6">
 
-      {/* 🔥 TABS */}
-      <div className="flex gap-2 mb-4">
-        {[
-          { key: 'all', label: 'All' },
-          { key: 'active', label: 'Active' },
-          { key: 'page_die', label: 'page_die' }
-        ].map(t => (
-          <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
-            className={`px-3 py-1 rounded text-sm
-              ${tab === t.key
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}
-            `}
-          >
-            {t.label}
-          </button>
-        ))}
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search page..."
+          className="
+            w-full
+            bg-gray-900
+            border border-gray-800
+            rounded-2xl
+            px-5 py-3
+            text-white
+            placeholder:text-white/30
+            focus:outline-none
+            focus:border-blue-500
+          "
+        />
+
       </div>
 
-      {/* TABLE */}
-      <div className="bg-white rounded-xl shadow overflow-hidden">
+      {/* TABS */}
+      <div className="
+        flex gap-2
+        bg-gray-900
+        border border-gray-800
+        p-2
+        rounded-2xl
+        w-fit
+        mb-8
+      ">
 
-        <table className="w-full text-sm">
+        {TABS.map((t) => {
 
-          <thead className="bg-gray-50 text-gray-600">
-            <tr>
-              <th className="px-4 py-3 text-left">Page ID</th>
-              <th className="px-4 py-3 text-left">Agen</th>
-              <th className="px-4 py-3 text-left">Page Name</th>
-              <th className="px-4 py-3 text-center">Status</th>
-              <th className="px-4 py-3 text-left">Remark</th>
-              <th className="px-4 py-3 text-center">Action</th>
-            </tr>
-          </thead>
+          const active = tab === t.key;
 
-          <tbody>
-            {paginated.map((row, i) => (
-              <tr
-                key={row.id}
-                className={`border-t hover:bg-gray-50 ${
-                  i % 2 ? 'bg-gray-50/40' : ''
-                }`}
-              >
+          return (
+            <button
+              key={t.key}
+              onClick={() => {
+                setTab(t.key);
+                setPage(1);
+              }}
+              className={`
+                px-4 py-2
+                rounded-xl
+                text-sm font-bold
+                transition
 
-                <td className="px-4 py-3 font-medium">{row.page_id}</td>
-                <td className="px-4 py-3">{row.agen || '-'}</td>
-                <td className="px-4 py-3 truncate max-w-[220px]">
-                  {row.page_name || '-'}
-                </td>
+                ${
+                  active
+                    ? "bg-blue-600 text-white"
+                    : "text-white/60 hover:bg-gray-800"
+                }
+              `}
+            >
+              {t.emoji} {t.label}
+            </button>
+          );
+        })}
 
-                {/* STATUS BADGE */}
-                <td className="px-4 py-3 text-center">
-                  <span className={`px-2 py-1 rounded text-xs
-                    ${row.status === 'active'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-gray-200 text-gray-600'}
-                  `}>
-                    {row.status || 'page_die'}
-                  </span>
-                </td>
-
-                <td className="px-4 py-3 truncate max-w-[200px]">
-                  {row.remark || '-'}
-                </td>
-
-                <td className="px-4 py-3 text-center">
-                  <button onClick={() => openEdit(row)} className="text-blue-600 mr-2">Edit</button>
-                  <button onClick={() => handleDelete(row.id)} className="text-red-600 mr-2">Delete</button>
-                  <button onClick={() => autoCopy(row)} className="text-green-600">Copy</button>
-                </td>
-
-              </tr>
-            ))}
-          </tbody>
-
-        </table>
       </div>
+
+      {/* GRID */}
+      {paginated.length === 0 ? (
+
+        <div className="
+          flex flex-col items-center justify-center
+          py-24 text-white/30
+        ">
+
+          <p className="text-5xl mb-4">
+            📭
+          </p>
+
+          <p className="text-lg font-bold">
+            No pages found
+          </p>
+
+        </div>
+
+      ) : (
+
+        <div className="
+          grid grid-cols-1
+          md:grid-cols-2
+          xl:grid-cols-3
+          gap-6
+        ">
+
+          {paginated.map((row) => (
+
+            <div
+              key={row.id}
+              className="
+                bg-gray-900
+                border border-gray-800
+                rounded-3xl
+                p-5
+                hover:border-blue-500/40
+                transition
+              "
+            >
+
+              {/* HEADER */}
+              <div className="
+                flex items-start justify-between
+                mb-5
+              ">
+
+                <div>
+
+                  <h2 className="
+                    text-xl font-black
+                    break-all
+                  ">
+                    {row.page_id}
+                  </h2>
+
+                  <p className="
+                    text-white/40 text-sm mt-1
+                  ">
+                    {row.page_name || "-"}
+                  </p>
+
+                </div>
+
+                <span className={`
+                  px-3 py-1
+                  rounded-full
+                  text-xs font-bold
+                  uppercase
+                  ${STATUS_STYLE[row.status]}
+                `}>
+                  {row.status}
+                </span>
+
+              </div>
+
+              {/* BODY */}
+              <div className="space-y-3">
+
+                <div className="
+                  bg-gray-800/60
+                  rounded-2xl
+                  p-4
+                  border border-gray-800
+                ">
+
+                  <p className="
+                    text-xs text-white/40
+                    uppercase
+                  ">
+                    Agen
+                  </p>
+
+                  <p className="
+                    mt-1 font-bold
+                    break-all
+                  ">
+                    {row.agen || "-"}
+                  </p>
+
+                </div>
+
+                <div className="
+                  bg-gray-800/60
+                  rounded-2xl
+                  p-4
+                  border border-gray-800
+                ">
+
+                  <p className="
+                    text-xs text-white/40
+                    uppercase
+                  ">
+                    Remark
+                  </p>
+
+                  <p className="
+                    mt-1 text-sm
+                    break-all
+                  ">
+                    {row.remark || "-"}
+                  </p>
+
+                </div>
+
+              </div>
+
+              {/* ACTIONS */}
+              <div className="
+                mt-5
+                flex gap-2
+              ">
+
+                <button
+                  onClick={() => autoCopy(row)}
+                  className="
+                    flex-1
+                    py-2.5
+                    rounded-2xl
+                    bg-blue-600 hover:bg-blue-500
+                    text-white font-bold
+                  "
+                >
+                  📋 Copy
+                </button>
+
+                <button
+                  onClick={() => openEdit(row)}
+                  className="
+                    flex-1
+                    py-2.5
+                    rounded-2xl
+                    bg-yellow-500/10
+                    hover:bg-yellow-500/20
+                    text-yellow-400
+                    border border-yellow-500/20
+                    font-bold
+                  "
+                >
+                  ✏️ Edit
+                </button>
+
+                <button
+                  onClick={() => handleDelete(row.id)}
+                  className="
+                    flex-1
+                    py-2.5
+                    rounded-2xl
+                    bg-red-500/10
+                    hover:bg-red-500/20
+                    text-red-400
+                    border border-red-500/20
+                    font-bold
+                  "
+                >
+                  🗑 Delete
+                </button>
+
+              </div>
+
+            </div>
+
+          ))}
+
+        </div>
+
+      )}
 
       {/* PAGINATION */}
-      <div className="mt-4 flex justify-between">
-        <span>Page {page} / {totalPages}</span>
+      <div className="
+        mt-8
+        bg-gray-900
+        border border-gray-800
+        rounded-2xl
+        px-5 py-4
+        flex items-center justify-between
+      ">
 
-        <div>
-          <button disabled={page === 1} onClick={() => setPage(p => p - 1)}>Prev</button>
-          <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next</button>
+        <p className="text-white/60">
+
+          Page {page} / {totalPages}
+
+        </p>
+
+        <div className="flex gap-2">
+
+          <button
+            disabled={page === 1}
+            onClick={() => setPage(page - 1)}
+            className="
+              px-4 py-2
+              rounded-xl
+              bg-gray-800
+              hover:bg-gray-700
+              disabled:opacity-30
+            "
+          >
+            Prev
+          </button>
+
+          <button
+            disabled={page === totalPages}
+            onClick={() => setPage(page + 1)}
+            className="
+              px-4 py-2
+              rounded-xl
+              bg-blue-600
+              hover:bg-blue-500
+              disabled:opacity-30
+            "
+          >
+            Next
+          </button>
+
         </div>
+
       </div>
 
       {/* MODAL */}
       {openModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center">
 
-          <div className="bg-white p-6 rounded w-[420px]">
+        <Modal onClose={() => setOpenModal(false)}>
 
-            <h2 className="text-xl mb-4">
-              {editingId ? 'Edit Page' : 'Add Page'}
-            </h2>
+          <h2 className="
+            text-2xl font-black
+            mb-6
+          ">
+
+            {editingId
+              ? "✏️ Edit Page"
+              : "➕ Add Page"}
+
+          </h2>
+
+          <div className="space-y-3">
 
             <input
-              value={form.page_id || ''}
-              onChange={e => setForm({ ...form, page_id: e.target.value })}
+              value={form.page_id || ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  page_id: e.target.value,
+                })
+              }
               placeholder="Page ID"
-              className="w-full p-2 border mb-2"
+              className="
+                w-full
+                bg-gray-800
+                border border-gray-700
+                rounded-2xl
+                p-4
+                text-white
+              "
             />
 
-            
             <input
-              value={form.agen || ''}
-              onChange={e => setForm({ ...form, agen: e.target.value })}
-              placeholder="Agen"
-              className="w-full p-2 border mb-2"
-            />
-<input
-              value={form.page_name || ''}
-              onChange={e => setForm({ ...form, page_name: e.target.value })}
+              value={form.page_name || ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  page_name: e.target.value,
+                })
+              }
               placeholder="Page Name"
-              className="w-full p-2 border mb-2"
+              className="
+                w-full
+                bg-gray-800
+                border border-gray-700
+                rounded-2xl
+                p-4
+                text-white
+              "
+            />
+
+            <input
+              value={form.agen || ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  agen: e.target.value,
+                })
+              }
+              placeholder="Agen"
+              className="
+                w-full
+                bg-gray-800
+                border border-gray-700
+                rounded-2xl
+                p-4
+                text-white
+              "
             />
 
             <select
-              value={form.status || 'active'}
-              onChange={e => setForm({ ...form, status: e.target.value })}
-              className="w-full p-2 border mb-2"
+              value={form.status || "active"}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  status: e.target.value,
+                })
+              }
+              className="
+                w-full
+                bg-gray-800
+                border border-gray-700
+                rounded-2xl
+                p-4
+                text-white
+              "
             >
-              <option value="active">Active</option>
-              <option value="page_die">page_die</option>
+
+              <option value="active">
+                active
+              </option>
+
+              <option value="page_die">
+                page_die
+              </option>
+
             </select>
 
-            <input
-              value={form.remark || ''}
-              onChange={e => setForm({ ...form, remark: e.target.value })}
+            <textarea
+              rows={4}
+              value={form.remark || ""}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  remark: e.target.value,
+                })
+              }
               placeholder="Remark"
-              className="w-full p-2 border mb-3"
+              className="
+                w-full
+                bg-gray-800
+                border border-gray-700
+                rounded-2xl
+                p-4
+                text-white
+              "
             />
 
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setOpenModal(false)}>Cancel</button>
-              <button
-                onClick={handleSave}
-                className="bg-blue-600 text-white px-3 py-1 rounded"
-              >
-                Save
-              </button>
-            </div>
+          </div>
+
+          <div className="
+            flex justify-end gap-3
+            mt-6
+          ">
+
+            <button
+              onClick={() => setOpenModal(false)}
+              className="
+                px-5 py-3
+                rounded-2xl
+                bg-gray-800
+                hover:bg-gray-700
+              "
+            >
+              Cancel
+            </button>
+
+            <button
+              onClick={handleSave}
+              className="
+                px-6 py-3
+                rounded-2xl
+                bg-blue-600
+                hover:bg-blue-500
+                font-bold
+              "
+            >
+              Save
+            </button>
 
           </div>
-        </div>
-      )}
 
-      {/* TOAST */}
-      {toast && (
-        <div className="fixed bottom-5 right-5 bg-black text-white px-4 py-2 rounded">
-          {toast}
-        </div>
+        </Modal>
+
       )}
 
     </div>
