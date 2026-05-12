@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
-
+import Swal from "sweetalert2";
 export default function DataTable({ url, fields }) {
   const [list, setList] = useState([]);
   const [data, setData] = useState({});
@@ -15,14 +15,46 @@ export default function DataTable({ url, fields }) {
   }, []);
 
   const handleAdd = async () => {
-    await api.post(`/${url}`, data);
-    fetchData();
-  };
 
-  const handleDelete = async (id) => {
-    await api.delete(`/${url}/${id}`);
-    fetchData();
-  };
+  await api.post(`/${url}`, data);
+
+  Swal.fire({
+    icon: 'success',
+    title: 'เพิ่มข้อมูลสำเร็จ',
+    timer: 1200,
+    showConfirmButton: false,
+  });
+
+  fetchData();
+
+};
+
+ const handleDelete = async (id) => {
+
+  const result = await Swal.fire({
+    title: 'ยืนยันการลบ?',
+    text: 'ลบแล้วไม่สามารถกู้คืนได้',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'ลบ',
+    cancelButtonText: 'ยกเลิก',
+    reverseButtons: true,
+  });
+
+  if (!result.isConfirmed) return;
+
+  await api.delete(`/${url}/${id}`);
+
+  Swal.fire({
+    icon: 'success',
+    title: 'ลบสำเร็จ',
+    timer: 1200,
+    showConfirmButton: false,
+  });
+
+  fetchData();
+
+};
 
   return (
     <div>
