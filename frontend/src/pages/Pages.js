@@ -5,9 +5,7 @@ import toast from "react-hot-toast";
 
 // ================= MODAL =================
 const Modal = ({ children, onClose }) => {
-
   useEffect(() => {
-
     const handleKey = (e) => {
       if (e.key === "Escape") onClose();
     };
@@ -17,7 +15,6 @@ const Modal = ({ children, onClose }) => {
     return () => {
       window.removeEventListener("keydown", handleKey);
     };
-
   }, [onClose]);
 
   return (
@@ -29,7 +26,6 @@ const Modal = ({ children, onClose }) => {
         bg-black/70 backdrop-blur-sm
       "
     >
-
       <div
         onClick={(e) => e.stopPropagation()}
         className="
@@ -43,7 +39,6 @@ const Modal = ({ children, onClose }) => {
           shadow-2xl
         "
       >
-
         <button
           onClick={onClose}
           className="
@@ -55,7 +50,6 @@ const Modal = ({ children, onClose }) => {
         </button>
 
         {children}
-
       </div>
     </div>
   );
@@ -63,16 +57,13 @@ const Modal = ({ children, onClose }) => {
 
 // ================= STATUS =================
 const STATUS_STYLE = {
-  active:
-    "bg-green-500/10 text-green-400 border border-green-500/20",
+  active: "bg-green-500/10 text-green-400 border border-green-500/20",
 
-  page_die:
-    "bg-red-500/10 text-red-400 border border-red-500/20",
+  page_die: "bg-red-500/10 text-red-400 border border-red-500/20",
 };
 
 // ================= MAIN =================
 export default function Pages() {
-
   const LIMIT = 9;
 
   const [data, setData] = useState([]);
@@ -91,52 +82,64 @@ export default function Pages() {
 
   // ================= FETCH =================
   const fetchData = async () => {
-
     try {
-
       const res = await api.get("/pages", {
         params: { search },
       });
 
       setData(res.data.data || []);
-
     } catch (err) {
-
       console.error(err);
-
     }
-
   };
 
   useEffect(() => {
-
     fetchData();
 
     setPage(1);
-
   }, [search]);
 
   // ================= FILTER =================
   const filtered = data.filter((row) => {
+    const keyword = String(search || "")
+      .replace(/\s/g, "")
+      .toLowerCase();
 
-    if (tab === "all") return true;
+    const page_id = String(row.page_id || "")
+      .replace(/\s/g, "")
+      .toLowerCase();
 
-    return (row.status || "page_die") === tab;
+    const agen1 = String(row.agen1 || "")
+      .replace(/\s/g, "")
+      .toLowerCase();
 
+    const page_name = String(row.page_name || "")
+      .replace(/\s/g, "")
+      .toLowerCase();
+
+    const status = String(row.status || "").toLowerCase();
+
+    const remark = String(row.remark || "").toLowerCase();
+
+    const matchSearch =
+      page_id.includes(keyword) ||
+      agen1.includes(keyword) ||
+      page_name.includes(keyword) ||
+      status.includes(keyword) ||
+      remark.includes(keyword);
+
+    const matchTab = tab === "all" ? true : row.status === tab;
+
+    return matchSearch && matchTab;
   });
 
   // ================= PAGINATION =================
-  const totalPages =
-    Math.ceil(filtered.length / LIMIT) || 1;
+  const totalPages = Math.ceil(filtered.length / LIMIT) || 1;
 
-  const paginated = filtered.slice(
-    (page - 1) * LIMIT,
-    page * LIMIT
-  );
+  const paginated = filtered.slice((page - 1) * LIMIT, page * LIMIT);
 
   // ================= ADD =================
   const openAdd = async () => {
-
     const result = await Swal.fire({
       title: "Add Page ?",
       icon: "question",
@@ -159,12 +162,10 @@ export default function Pages() {
     setEditingId(null);
 
     setOpenModal(true);
-
   };
 
   // ================= EDIT =================
   const openEdit = async (row) => {
-
     const result = await Swal.fire({
       title: "Edit Page ?",
       icon: "question",
@@ -183,25 +184,15 @@ export default function Pages() {
     setEditingId(row.id);
 
     setOpenModal(true);
-
   };
 
   // ================= SAVE =================
   const handleSave = async () => {
-
     try {
-
       if (editingId) {
-
-        await api.put(
-          `/pages/${editingId}`,
-          form
-        );
-
+        await api.put(`/pages/${editingId}`, form);
       } else {
-
         await api.post("/pages", form);
-
       }
 
       setOpenModal(false);
@@ -209,18 +200,13 @@ export default function Pages() {
       fetchData();
 
       toast.success("Saved ✅");
-
     } catch {
-
       toast.error("Error ❌");
-
     }
-
   };
 
   // ================= DELETE =================
   const handleDelete = async (id) => {
-
     const result = await Swal.fire({
       title: "Delete Page ?",
       icon: "warning",
@@ -233,31 +219,23 @@ export default function Pages() {
     if (!result.isConfirmed) return;
 
     try {
-
       await api.delete(`/pages/${id}`);
 
       fetchData();
 
       toast.success("Deleted ✅");
-
     } catch {
-
       toast.error("Delete Failed ❌");
-
     }
-
   };
 
   // ================= COPY =================
   const autoCopy = (row) => {
-
-    const text =
-      `${row.page_id}|${row.agen}`;
+    const text = `${row.page_id}|${row.agen}`;
 
     navigator.clipboard.writeText(text);
 
     toast.success("Copied 🔥");
-
   };
 
   const TABS = [
@@ -282,20 +260,14 @@ export default function Pages() {
 
   return (
     <div className="p-6 min-h-screen bg-gray-950 text-white">
-
       {/* HEADER */}
       <div className="flex items-center justify-between mb-8">
-
         <div>
-
-          <h1 className="text-4xl font-black">
-            Pages
-          </h1>
+          <h1 className="text-4xl font-black">Pages</h1>
 
           <p className="text-white/50 mt-1 text-sm">
             {filtered.length} pages found
           </p>
-
         </div>
 
         <button
@@ -311,12 +283,10 @@ export default function Pages() {
         >
           + Add Page
         </button>
-
       </div>
 
       {/* SEARCH */}
       <div className="mb-6">
-
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -333,11 +303,11 @@ export default function Pages() {
             focus:border-blue-500
           "
         />
-
       </div>
 
       {/* TABS */}
-      <div className="
+      <div
+        className="
         flex gap-2
         bg-gray-900
         border border-gray-800
@@ -345,10 +315,9 @@ export default function Pages() {
         rounded-2xl
         w-fit
         mb-8
-      ">
-
+      "
+      >
         {TABS.map((t) => {
-
           const active = tab === t.key;
 
           return (
@@ -375,38 +344,30 @@ export default function Pages() {
             </button>
           );
         })}
-
       </div>
 
       {/* GRID */}
       {paginated.length === 0 ? (
-
-        <div className="
+        <div
+          className="
           flex flex-col items-center justify-center
           py-24 text-white/30
-        ">
+        "
+        >
+          <p className="text-5xl mb-4">📭</p>
 
-          <p className="text-5xl mb-4">
-            📭
-          </p>
-
-          <p className="text-lg font-bold">
-            No pages found
-          </p>
-
+          <p className="text-lg font-bold">No pages found</p>
         </div>
-
       ) : (
-
-        <div className="
+        <div
+          className="
           grid grid-cols-1
           md:grid-cols-2
           xl:grid-cols-3
           gap-6
-        ">
-
+        "
+        >
           {paginated.map((row) => (
-
             <div
               key={row.id}
               className="
@@ -418,99 +379,109 @@ export default function Pages() {
                 transition
               "
             >
-
               {/* HEADER */}
-              <div className="
+              <div
+                className="
                 flex items-start justify-between
                 mb-5
-              ">
-
+              "
+              >
                 <div>
-
-                  <h2 className="
+                  <h2
+                    className="
                     text-xl font-black
                     break-all
-                  ">
+                  "
+                  >
                     {row.page_id}
                   </h2>
 
-                  <p className="
+                  <p
+                    className="
                     text-white/40 text-sm mt-1
-                  ">
+                  "
+                  >
                     {row.page_name || "-"}
                   </p>
-
                 </div>
 
-                <span className={`
+                <span
+                  className={`
                   px-3 py-1
                   rounded-full
                   text-xs font-bold
                   uppercase
                   ${STATUS_STYLE[row.status]}
-                `}>
+                `}
+                >
                   {row.status}
                 </span>
-
               </div>
 
               {/* BODY */}
               <div className="space-y-3">
-
-                <div className="
+                <div
+                  className="
                   bg-gray-800/60
                   rounded-2xl
                   p-4
                   border border-gray-800
-                ">
-
-                  <p className="
+                "
+                >
+                  <p
+                    className="
                     text-xs text-white/40
                     uppercase
-                  ">
+                  "
+                  >
                     Agen
                   </p>
 
-                  <p className="
+                  <p
+                    className="
                     mt-1 font-bold
                     break-all
-                  ">
+                  "
+                  >
                     {row.agen || "-"}
                   </p>
-
                 </div>
 
-                <div className="
+                <div
+                  className="
                   bg-gray-800/60
                   rounded-2xl
                   p-4
                   border border-gray-800
-                ">
-
-                  <p className="
+                "
+                >
+                  <p
+                    className="
                     text-xs text-white/40
                     uppercase
-                  ">
+                  "
+                  >
                     Remark
                   </p>
 
-                  <p className="
+                  <p
+                    className="
                     mt-1 text-sm
                     break-all
-                  ">
+                  "
+                  >
                     {row.remark || "-"}
                   </p>
-
                 </div>
-
               </div>
 
               {/* ACTIONS */}
-              <div className="
+              <div
+                className="
                 mt-5
                 flex gap-2
-              ">
-
+              "
+              >
                 <button
                   onClick={() => autoCopy(row)}
                   className="
@@ -555,35 +526,28 @@ export default function Pages() {
                 >
                   🗑 Delete
                 </button>
-
               </div>
-
             </div>
-
           ))}
-
         </div>
-
       )}
 
       {/* PAGINATION */}
-      <div className="
+      <div
+        className="
         mt-8
         bg-gray-900
         border border-gray-800
         rounded-2xl
         px-5 py-4
         flex items-center justify-between
-      ">
-
+      "
+      >
         <p className="text-white/60">
-
           Page {page} / {totalPages}
-
         </p>
 
         <div className="flex gap-2">
-
           <button
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
@@ -611,29 +575,22 @@ export default function Pages() {
           >
             Next
           </button>
-
         </div>
-
       </div>
 
       {/* MODAL */}
       {openModal && (
-
         <Modal onClose={() => setOpenModal(false)}>
-
-          <h2 className="
+          <h2
+            className="
             text-2xl font-black
             mb-6
-          ">
-
-            {editingId
-              ? "✏️ Edit Page"
-              : "➕ Add Page"}
-
+          "
+          >
+            {editingId ? "✏️ Edit Page" : "➕ Add Page"}
           </h2>
 
           <div className="space-y-3">
-
             <input
               value={form.page_id || ""}
               onChange={(e) =>
@@ -708,15 +665,9 @@ export default function Pages() {
                 text-white
               "
             >
+              <option value="active">active</option>
 
-              <option value="active">
-                active
-              </option>
-
-              <option value="page_die">
-                page_die
-              </option>
-
+              <option value="page_die">page_die</option>
             </select>
 
             <textarea
@@ -738,14 +689,14 @@ export default function Pages() {
                 text-white
               "
             />
-
           </div>
 
-          <div className="
+          <div
+            className="
             flex justify-end gap-3
             mt-6
-          ">
-
+          "
+          >
             <button
               onClick={() => setOpenModal(false)}
               className="
@@ -770,13 +721,9 @@ export default function Pages() {
             >
               Save
             </button>
-
           </div>
-
         </Modal>
-
       )}
-
     </div>
   );
 }

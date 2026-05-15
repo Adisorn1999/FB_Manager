@@ -33,16 +33,44 @@ router.post("/", auth, (req, res) => {
   );
 });
 
-// 🟢 GET ALL (❗ไม่โชว์ token)
 router.get("/", auth, (req, res) => {
-  db.query("SELECT * FROM pixels", (err, result) => {
-    if (err) return res.status(500).json(err);
 
-    res.json({
-      success: true,
-      data: result,
-    });
-  });
+  db.query(
+    "SELECT * FROM pixels",
+    (err, result) => {
+
+      if (err) {
+        return res.status(500).json(err);
+      }
+
+      const rows = result.map((px) => {
+
+        try {
+
+          return {
+            ...px,
+            token: decrypt(px.token),
+          };
+
+        } catch {
+
+          return {
+            ...px,
+            token: "ERROR",
+          };
+
+        }
+
+      });
+
+      res.json({
+        success: true,
+        data: rows,
+      });
+
+    }
+  );
+
 });
 
 // 🔍 GET ONE (decrypt token)

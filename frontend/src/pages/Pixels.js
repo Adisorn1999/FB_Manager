@@ -5,9 +5,7 @@ import toast from "react-hot-toast";
 
 // ================= MODAL =================
 const Modal = ({ children, onClose }) => {
-
   useEffect(() => {
-
     const handleKey = (e) => {
       if (e.key === "Escape") onClose();
     };
@@ -17,7 +15,6 @@ const Modal = ({ children, onClose }) => {
     return () => {
       window.removeEventListener("keydown", handleKey);
     };
-
   }, [onClose]);
 
   return (
@@ -29,7 +26,6 @@ const Modal = ({ children, onClose }) => {
         bg-black/70 backdrop-blur-sm
       "
     >
-
       <div
         onClick={(e) => e.stopPropagation()}
         className="
@@ -43,7 +39,6 @@ const Modal = ({ children, onClose }) => {
           shadow-2xl
         "
       >
-
         <button
           onClick={onClose}
           className="
@@ -55,7 +50,6 @@ const Modal = ({ children, onClose }) => {
         </button>
 
         {children}
-
       </div>
     </div>
   );
@@ -63,18 +57,13 @@ const Modal = ({ children, onClose }) => {
 
 // ================= STATUS =================
 const STATUS_STYLE = {
+  active: "bg-green-500/10 text-green-400 border border-green-500/20",
 
-  active:
-    "bg-green-500/10 text-green-400 border border-green-500/20",
-
-  inactive:
-    "bg-red-500/10 text-red-400 border border-red-500/20",
-
+  inactive: "bg-red-500/10 text-red-400 border border-red-500/20",
 };
 
 // ================= MAIN =================
 export default function Pixels() {
-
   const LIMIT = 9;
 
   const [data, setData] = useState([]);
@@ -93,52 +82,72 @@ export default function Pixels() {
 
   // ================= FETCH =================
   const fetchData = async () => {
-
     try {
-
       const res = await api.get("/pixels", {
         params: { search },
       });
 
       setData(res.data.data || []);
-
     } catch (err) {
-
       console.error(err);
-
     }
-
   };
 
   useEffect(() => {
-
     fetchData();
 
     setPage(1);
-
   }, [search]);
 
   // ================= FILTER =================
   const filtered = data.filter((row) => {
 
-    if (tab === "all") return true;
+  const keyword = String(search || "")
+    .replace(/\s/g, "")
+    .toLowerCase();
 
-    return (row.status || "inactive") === tab;
+  const px_id = String(row.px_id || "")
+    .replace(/\s/g, "")
+    .toLowerCase();
 
-  });
+  const agen1 = String(row.agen1 || "")
+    .replace(/\s/g, "")
+    .toLowerCase();
+
+  const agen2 = String(row.agen2 || "")
+    .replace(/\s/g, "")
+    .toLowerCase();
+
+  const token = String(row.token || "")
+    .toLowerCase();
+
+  const matchSearch =
+
+    px_id.includes(keyword) ||
+
+    agen1.includes(keyword) ||
+
+    agen2.includes(keyword) ||
+
+    token.includes(keyword);
+
+
+  const matchTab =
+    tab === "all"
+      ? true
+      : row.status === tab;
+
+  return matchSearch && matchTab;
+
+});
 
   // ================= PAGINATION =================
-  const totalPages =
-    Math.ceil(filtered.length / LIMIT) || 1;
+  const totalPages = Math.ceil(filtered.length / LIMIT) || 1;
 
-  const paginated = filtered.slice(
-    (page - 1) * LIMIT,
-    page * LIMIT
-  );
+  const paginated = filtered.slice((page - 1) * LIMIT, page * LIMIT);
 
   // ================= ADD =================
   const openAdd = async () => {
-
     const result = await Swal.fire({
       title: "Add Pixel ?",
       icon: "question",
@@ -161,12 +170,10 @@ export default function Pixels() {
     setEditingId(null);
 
     setOpenModal(true);
-
   };
 
   // ================= EDIT =================
   const openEdit = async (row) => {
-
     const result = await Swal.fire({
       title: "Edit Pixel ?",
       icon: "question",
@@ -185,25 +192,15 @@ export default function Pixels() {
     setEditingId(row.id);
 
     setOpenModal(true);
-
   };
 
   // ================= SAVE =================
   const handleSave = async () => {
-
     try {
-
       if (editingId) {
-
-        await api.put(
-          `/pixels/${editingId}`,
-          form
-        );
-
+        await api.put(`/pixels/${editingId}`, form);
       } else {
-
         await api.post("/pixels", form);
-
       }
 
       setOpenModal(false);
@@ -211,18 +208,13 @@ export default function Pixels() {
       fetchData();
 
       toast.success("Saved ✅");
-
     } catch {
-
       toast.error("Error ❌");
-
     }
-
   };
 
   // ================= DELETE =================
   const handleDelete = async (id) => {
-
     const result = await Swal.fire({
       title: "Delete Pixel ?",
       icon: "warning",
@@ -235,39 +227,33 @@ export default function Pixels() {
     if (!result.isConfirmed) return;
 
     try {
-
       await api.delete(`/pixels/${id}`);
 
       fetchData();
 
       toast.success("Deleted ✅");
-
     } catch {
-
       toast.error("Delete Failed ❌");
-
     }
-
   };
 
   // ================= COPY =================
   const autoCopy = (row) => {
-
-    const text =
-      `${row.px_id}|${row.agen1}|${row.agen2}`;
+    const text = `${row.px_id}|${row.agen1}|${row.agen2}`;
 
     navigator.clipboard.writeText(text);
 
     toast.success("Copied 🔥");
-
   };
 
-  const copyToken = (token) => {
+  const copyToken = async (token) => {
+    try {
+      await navigator.clipboard.writeText(token);
 
-    navigator.clipboard.writeText(token || "");
-
-    toast.success("Token Copied 🔥");
-
+      toast.success("Token copied 🔥");
+    } catch {
+      toast.error("Copy failed ❌");
+    }
   };
 
   const TABS = [
@@ -292,20 +278,14 @@ export default function Pixels() {
 
   return (
     <div className="p-6 min-h-screen bg-gray-950 text-white">
-
       {/* HEADER */}
       <div className="flex items-center justify-between mb-8">
-
         <div>
-
-          <h1 className="text-4xl font-black">
-            Pixels
-          </h1>
+          <h1 className="text-4xl font-black">Pixels</h1>
 
           <p className="text-white/50 mt-1 text-sm">
             {filtered.length} pixels found
           </p>
-
         </div>
 
         <button
@@ -321,12 +301,10 @@ export default function Pixels() {
         >
           + Add Pixel
         </button>
-
       </div>
 
       {/* SEARCH */}
       <div className="mb-6">
-
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -343,11 +321,11 @@ export default function Pixels() {
             focus:border-blue-500
           "
         />
-
       </div>
 
       {/* TABS */}
-      <div className="
+      <div
+        className="
         flex gap-2
         bg-gray-900
         border border-gray-800
@@ -355,10 +333,9 @@ export default function Pixels() {
         rounded-2xl
         w-fit
         mb-8
-      ">
-
+      "
+      >
         {TABS.map((t) => {
-
           const active = tab === t.key;
 
           return (
@@ -385,38 +362,30 @@ export default function Pixels() {
             </button>
           );
         })}
-
       </div>
 
       {/* GRID */}
       {paginated.length === 0 ? (
-
-        <div className="
+        <div
+          className="
           flex flex-col items-center justify-center
           py-24 text-white/30
-        ">
+        "
+        >
+          <p className="text-5xl mb-4">📭</p>
 
-          <p className="text-5xl mb-4">
-            📭
-          </p>
-
-          <p className="text-lg font-bold">
-            No pixels found
-          </p>
-
+          <p className="text-lg font-bold">No pixels found</p>
         </div>
-
       ) : (
-
-        <div className="
+        <div
+          className="
           grid grid-cols-1
           md:grid-cols-2
           xl:grid-cols-3
           gap-6
-        ">
-
+        "
+        >
           {paginated.map((row) => (
-
             <div
               key={row.id}
               className="
@@ -428,114 +397,126 @@ export default function Pixels() {
                 transition
               "
             >
-
               {/* HEADER */}
-              <div className="
+              <div
+                className="
                 flex items-start justify-between
                 mb-5
-              ">
-
+              "
+              >
                 <div>
-
-                  <h2 className="
+                  <h2
+                    className="
                     text-xl font-black
                     break-all
-                  ">
+                  "
+                  >
                     {row.px_id}
                   </h2>
 
-                  <p className="
+                  <p
+                    className="
                     text-white/40 text-sm mt-1
-                  ">
+                  "
+                  >
                     Pixel Tracking
                   </p>
-
                 </div>
 
-                <span className={`
+                <span
+                  className={`
                   px-3 py-1
                   rounded-full
                   text-xs font-bold
                   uppercase
                   ${STATUS_STYLE[row.status]}
-                `}>
+                `}
+                >
                   {row.status}
                 </span>
-
               </div>
 
               {/* BODY */}
               <div className="space-y-3">
-
-                <div className="
+                <div
+                  className="
                   bg-gray-800/60
                   rounded-2xl
                   p-4
                   border border-gray-800
-                ">
-
-                  <p className="
+                "
+                >
+                  <p
+                    className="
                     text-xs text-white/40
                     uppercase
-                  ">
+                  "
+                  >
                     Agen 1
                   </p>
 
-                  <p className="
+                  <p
+                    className="
                     mt-1 font-bold
                     break-all
-                  ">
+                  "
+                  >
                     {row.agen1 || "-"}
                   </p>
-
                 </div>
 
-                <div className="
+                <div
+                  className="
                   bg-gray-800/60
                   rounded-2xl
                   p-4
                   border border-gray-800
-                ">
-
-                  <p className="
+                "
+                >
+                  <p
+                    className="
                     text-xs text-white/40
                     uppercase
-                  ">
+                  "
+                  >
                     Agen 2
                   </p>
 
-                  <p className="
+                  <p
+                    className="
                     mt-1 font-bold
                     break-all
-                  ">
+                  "
+                  >
                     {row.agen2 || "-"}
                   </p>
-
                 </div>
 
-                <div className="
+                <div
+                  className="
                   bg-gray-800/60
                   rounded-2xl
                   p-4
                   border border-gray-800
-                ">
-
-                  <div className="
+                "
+                >
+                  <div
+                    className="
                     flex items-center justify-between
                     gap-2
-                  ">
-
-                    <p className="
+                  "
+                  >
+                    <p
+                      className="
                       text-xs text-white/40
                       uppercase
-                    ">
+                    "
+                    >
                       Token
                     </p>
 
                     <button
-                      onClick={() =>
-                        copyToken(row.token)
-                      }
+                      onClick={() => copyToken(row.token)}
                       className="
                         text-xs
                         bg-gray-700
@@ -546,29 +527,29 @@ export default function Pixels() {
                     >
                       Copy
                     </button>
-
                   </div>
 
-                  <p className="
+                  <p
+                    className="
                     mt-2
                     text-xs
                     break-all
                     text-white/70
                     font-mono
-                  ">
+                  "
+                  >
                     {row.token || "-"}
                   </p>
-
                 </div>
-
               </div>
 
               {/* ACTIONS */}
-              <div className="
+              <div
+                className="
                 mt-5
                 flex gap-2
-              ">
-
+              "
+              >
                 <button
                   onClick={() => autoCopy(row)}
                   className="
@@ -613,35 +594,28 @@ export default function Pixels() {
                 >
                   🗑 Delete
                 </button>
-
               </div>
-
             </div>
-
           ))}
-
         </div>
-
       )}
 
       {/* PAGINATION */}
-      <div className="
+      <div
+        className="
         mt-8
         bg-gray-900
         border border-gray-800
         rounded-2xl
         px-5 py-4
         flex items-center justify-between
-      ">
-
+      "
+      >
         <p className="text-white/60">
-
           Page {page} / {totalPages}
-
         </p>
 
         <div className="flex gap-2">
-
           <button
             disabled={page === 1}
             onClick={() => setPage(page - 1)}
@@ -669,29 +643,22 @@ export default function Pixels() {
           >
             Next
           </button>
-
         </div>
-
       </div>
 
       {/* MODAL */}
       {openModal && (
-
         <Modal onClose={() => setOpenModal(false)}>
-
-          <h2 className="
+          <h2
+            className="
             text-2xl font-black
             mb-6
-          ">
-
-            {editingId
-              ? "✏️ Edit Pixel"
-              : "➕ Add Pixel"}
-
+          "
+          >
+            {editingId ? "✏️ Edit Pixel" : "➕ Add Pixel"}
           </h2>
 
           <div className="space-y-3">
-
             <input
               value={form.px_id || ""}
               onChange={(e) =>
@@ -786,24 +753,18 @@ export default function Pixels() {
                 text-white
               "
             >
+              <option value="active">active</option>
 
-              <option value="active">
-                active
-              </option>
-
-              <option value="inactive">
-                inactive
-              </option>
-
+              <option value="inactive">inactive</option>
             </select>
-
           </div>
 
-          <div className="
+          <div
+            className="
             flex justify-end gap-3
             mt-6
-          ">
-
+          "
+          >
             <button
               onClick={() => setOpenModal(false)}
               className="
@@ -828,13 +789,9 @@ export default function Pixels() {
             >
               Save
             </button>
-
           </div>
-
         </Modal>
-
       )}
-
     </div>
   );
 }
