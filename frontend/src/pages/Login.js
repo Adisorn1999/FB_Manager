@@ -35,6 +35,14 @@ export default function Login() {
       localStorage.setItem("token", res.data.token);
 
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      Swal.fire({
+            title: "Edit Page ?",
+            icon: "question",
+            showCancelButton: true,
+      
+            background: "#0f172a",
+            color: "#fff",
+          });
 
       navigate("/dashboard");
     } catch (err) {
