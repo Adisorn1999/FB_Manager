@@ -5,7 +5,6 @@ import Swal from "sweetalert2";
 
 export default function Login() {
   const navigate = useNavigate();
-
   const [form, setForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
 
@@ -23,7 +22,6 @@ export default function Login() {
     setLoading(true);
 
     if (!form.username || !form.password) {
-      // popup synchronous → ไม่หาย
       Swal.fire({
         title: "Missing Fields ❌",
         text: "Please fill username and password",
@@ -38,7 +36,6 @@ export default function Login() {
 
     try {
       const res = await api.post("/auth/login", form);
-
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
@@ -54,7 +51,6 @@ export default function Login() {
 
       navigate("/accounts");
     } catch (err) {
-      // popup synchronous → จะไม่หาย
       Swal.fire({
         title: "Login Failed ❌",
         text: err?.response?.data?.message || "Wrong username/password",
@@ -69,18 +65,24 @@ export default function Login() {
   };
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-10 rounded-2xl shadow-lg w-[400px]">
-        <h1 className="text-4xl font-bold text-center mb-8">Login</h1>
+    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-700">
+      <div className="bg-gray-950/90 backdrop-blur-md p-10 rounded-3xl shadow-2xl w-[400px]">
+        <h1 className="text-4xl font-extrabold text-white text-center mb-6 tracking-tight">
+          Welcome Back
+        </h1>
+        <p className="text-center text-white/60 mb-8">
+          Please login to your account
+        </p>
 
-        <form onSubmit={handleLogin}>
+        <form onSubmit={handleLogin} className="space-y-5">
           <input
             type="text"
             name="username"
             placeholder="Username"
             value={form.username}
             onChange={handleChange}
-            className="w-full border p-4 rounded-lg mb-4 outline-none focus:ring-2 focus:ring-blue-400"
+            autoComplete="off"
+            className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <input
@@ -89,17 +91,25 @@ export default function Login() {
             placeholder="Password"
             value={form.password}
             onChange={handleChange}
-            className="w-full border p-4 rounded-lg mb-6 outline-none focus:ring-2 focus:ring-blue-400"
+            autoComplete="off"
+            className="w-full bg-gray-900 border border-gray-700 rounded-xl p-4 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-500 hover:bg-blue-600 transition text-white p-4 rounded-lg font-semibold"
+            className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition text-white font-bold p-4 rounded-xl shadow-md"
           >
             {loading ? "Loading..." : "Login"}
           </button>
         </form>
+
+        <div className="text-center mt-6 text-white/50 text-sm">
+          Don't have an account?{" "}
+          <span className="text-blue-400 hover:underline cursor-pointer">
+            Sign Up
+          </span>
+        </div>
       </div>
     </div>
   );

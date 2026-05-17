@@ -1,17 +1,48 @@
 import { Link, useLocation } from "react-router-dom";
-
+import Swal from "sweetalert2";
 export default function Sidebar() {
 
   const location = useLocation();
 
-  const logout = () => {
+  const logout = async () => {
 
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const result = await Swal.fire({
+    title: "Logout ?",
+    text: "Are you sure you want to logout?",
+    icon: "warning",
 
-    window.location.href = "/login";
+    showCancelButton: true,
 
-  };
+    confirmButtonText: "Yes, Logout",
+    cancelButtonText: "Cancel",
+
+    confirmButtonColor: "#dc2626",
+    cancelButtonColor: "#374151",
+
+    background: "#15172b",
+    color: "#fff",
+  });
+
+  if (!result.isConfirmed) return;
+
+  // remove token
+  localStorage.removeItem("token");
+  localStorage.removeItem("user");
+
+  // success popup
+  await Swal.fire({
+    title: "Logout Success 👋",
+    icon: "success",
+
+    timer: 1200,
+    showConfirmButton: false,
+
+    background: "#15172b",
+    color: "#fff",
+  });
+
+  window.location.href = "/login";
+};
 
   return (
 
@@ -55,13 +86,6 @@ export default function Sidebar() {
 
       {/* MENU */}
       <div className="space-y-2">
-
-        <MenuItem
-          to="/dashboard"
-          label="Dashboard"
-          active={location.pathname === "/dashboard"}
-        />
-
         <MenuItem
           to="/accounts"
           label="Accounts"
