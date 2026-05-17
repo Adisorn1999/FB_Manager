@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "react-hot-toast": "^2.6.0",
-    "sweetalert2": "^11.26.24"
-  }
-}

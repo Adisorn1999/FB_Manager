@@ -1,11 +1,58 @@
+# =========================
+# Dependencies
+# =========================
 node_modules
-.env
-
 backend/node_modules
 frontend/node_modules
 
-backend/.env
-frontend/.env
+# =========================
+# Environment Files
+# =========================
+.env
+.env.local
+.env.development
+.env.production
 
+backend/.env
+backend/.env.local
+backend/.env.development
+backend/.env.production
+
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+
+# =========================
+# Build Files
+# =========================
 build
 dist
+frontend/build
+
+# =========================
+# Logs
+# =========================
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# =========================
+# Docker
+# =========================
+docker-data
+*.pid
+
+# =========================
+# Patch / Temp
+# =========================
+*.patch
+*.tmp

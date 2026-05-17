@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useCallback } from "react";
 import api from "../api/axios";
 import Swal from "sweetalert2";
 import toast from "react-hot-toast";
@@ -85,24 +85,19 @@ export default function Links() {
   });
 
   // ================= FETCH =================
-  const fetchData = async () => {
-    try {
-      const res = await api.get("/links", {
-        params: { search },
-      });
+  const fetchData = useCallback(async () => {
+  try {
 
-      setData(res.data.data || []);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+    const res = await api.get("/links", {
+      params: { search },
+    });
 
-  useEffect(() => {
-    fetchData();
+    setData(res.data.data || []);
 
-    setPage(1);
-  }, [search]);
-
+  } catch (err) {
+    console.error(err);
+  }
+}, [search]);
   // ================= FILTER =================
   const filtered = data.filter((row) => {
     const keyword = String(search || "")

@@ -52,8 +52,8 @@ export default function Login() {
       navigate("/accounts");
     } catch (err) {
       Swal.fire({
-        title: "Login Failed ❌",
-        text: err?.response?.data?.message || "Wrong username/password",
+        title: "Invalid credentials ❌",
+        text:  "Invalid credentials",
         icon: "error",
         showConfirmButton: true,
         background: "#0f172a",
