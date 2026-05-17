@@ -87,9 +87,9 @@ export default function Sidebar() {
         />
 
         <MenuItem
-          to="/relations"
-          label="Relations"
-          active={location.pathname === "/relations"}
+          to="/links"
+          label="Links"
+          active={location.pathname === "/links"}
         />
 
       </div>

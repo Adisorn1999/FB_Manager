@@ -7,7 +7,7 @@ import Accounts from "./pages/Accounts";
 import Pages from "./pages/Pages";
 import Pixels from "./pages/Pixels";
 import Cards from "./pages/Cards";
-
+import Links from "./pages/Links";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -77,6 +77,19 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+         {/* LINKS */}
+        <Route
+          path="/links"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Links />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+
 
         {/* DEFAULT */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
