@@ -81,7 +81,7 @@ router.post("/check-duplicate", auth, (req, res) => {
   const passwordHash = hash(password || "");
   const emailPasswordHash = hash(email_password || "");
 
-  const sql = `
+  let sql = `
     SELECT id FROM accounts
     WHERE 
       username = ?
@@ -90,9 +90,7 @@ router.post("/check-duplicate", auth, (req, res) => {
       AND email = ?
       AND email_password_hash = ?
       AND bm = ?
-      ${id ? "AND id != ?" : ""}
       AND remark = ?
-    LIMIT 1
   `;
 
   const params = [
@@ -102,11 +100,15 @@ router.post("/check-duplicate", auth, (req, res) => {
     email,
     emailPasswordHash,
     bm,
-    "active",
-    remark // Assuming "active" is the default value for remark
+    remark || "",
   ];
 
-  if (id) params.push(id);
+  if (id) {
+    sql += " AND id != ?";
+    params.push(id);
+  }
+
+  sql += " LIMIT 1";
 
   db.query(sql, params, (err, result) => {
     if (err) return res.status(500).json({ message: "DB_ERROR" });

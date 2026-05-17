@@ -6,11 +6,17 @@ const jwt = require("jsonwebtoken");
 
 const db = require("../config/db");
 
-const auth = require("../middleware/auth");
+
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+  throw new Error("Missing JWT_SECRET environment variable");
+}
+
 // ================= REGISTER =================
 router.post("/register", async (req, res) => {
   try {
-    const { username, password, role } = req.body;
+    const { username, password } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({
@@ -30,7 +36,7 @@ router.post("/register", async (req, res) => {
       VALUES (?, ?, ?)
     `;
 
-    db.query(sql, [username, hash, role || "staff"], (err, result) => {
+    db.query(sql, [username, hash, "staff"], (err, result) => {
       if (err) {
         if (err.code === "ER_DUP_ENTRY") {
           return res.status(400).json({
@@ -77,7 +83,6 @@ router.post("/login", (req, res) => {
 
     const user = result[0];
 
-    // 🔥 เช็ค status
     if (user.status !== "active") {
       return res.status(403).json({
         success: false,
@@ -100,7 +105,7 @@ router.post("/login", (req, res) => {
         username: user.username,
         role: user.role,
       },
-      process.env.JWT_SECRET,
+      JWT_SECRET,
       {
         expiresIn: "1d",
       },
@@ -117,5 +122,5 @@ router.post("/login", (req, res) => {
     });
   });
 });
-console.log(process.env.JWT_SECRET);
+
 module.exports = router;
