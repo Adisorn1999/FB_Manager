@@ -1,4 +1,17 @@
  (cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF' 
+diff --git a/backend/.env.example b/backend/.env.example
+new file mode 100644
+index 0000000000000000000000000000000000000000..5073e51443b76f95388eaa6e27d23f48cdc9d688
+--- /dev/null
++++ b/backend/.env.example
+@@ -0,0 +1,7 @@
++PORT=5000
++JWT_SECRET=replace-with-a-long-random-secret-at-least-32-chars
++APP_CRYPTO_SECRET=replace-with-a-different-long-random-secret-at-least-32-chars
++
++# Optional login rate limit settings
++LOGIN_WINDOW_MS=900000
++LOGIN_MAX_ATTEMPTS=10
 diff --git a/backend/middleware/auth.js b/backend/middleware/auth.js
 index d32ccf5ed877bd5f11dca3adac036d88eede015d..82093ae3cd7be82586b87567fed4ac935602259e 100644
 --- a/backend/middleware/auth.js
@@ -153,10 +166,10 @@ index 876a696fecaa6429aa3acc2628dce19e289d1ccd..5ff433ce9f08fc1cae24c47688f34bfb
  
    if (search) {
 diff --git a/backend/routes/auth.js b/backend/routes/auth.js
-index ffcb79de2fd71fecf5bcab6aec30ef6c367c2561..f97075574a4cb72d74cf7e30977833d03d698437 100644
+index ffcb79de2fd71fecf5bcab6aec30ef6c367c2561..541c3cbaaf8cf58b1eae71f164a285986bff536e 100644
 --- a/backend/routes/auth.js
 +++ b/backend/routes/auth.js
-@@ -1,121 +1,126 @@
+@@ -1,121 +1,171 @@
  const express = require("express");
  const router = express.Router();
  
@@ -171,6 +184,40 @@ index ffcb79de2fd71fecf5bcab6aec30ef6c367c2561..f97075574a4cb72d74cf7e30977833d0
 +
 +if (!JWT_SECRET) {
 +  throw new Error("Missing JWT_SECRET environment variable");
++}
++
++const LOGIN_WINDOW_MS = Number(process.env.LOGIN_WINDOW_MS || 15 * 60 * 1000);
++const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 10);
++const loginAttempts = new Map();
++
++function getClientIp(req) {
++  const forwarded = req.headers["x-forwarded-for"];
++  if (typeof forwarded === "string" && forwarded.length > 0) {
++    return forwarded.split(",")[0].trim();
++  }
++  return req.ip || req.connection?.remoteAddress || "unknown";
++}
++
++function isRateLimited(key) {
++  const now = Date.now();
++  const rec = loginAttempts.get(key);
++
++  if (!rec || rec.expiresAt <= now) {
++    loginAttempts.set(key, { count: 1, expiresAt: now + LOGIN_WINDOW_MS });
++    return false;
++  }
++
++  rec.count += 1;
++
++  if (rec.count > LOGIN_MAX_ATTEMPTS) {
++    return true;
++  }
++
++  return false;
++}
++
++function clearRateLimit(key) {
++  loginAttempts.delete(key);
 +}
 +
  // ================= REGISTER =================
@@ -223,6 +270,15 @@ index ffcb79de2fd71fecf5bcab6aec30ef6c367c2561..f97075574a4cb72d74cf7e30977833d0
  // ================= LOGIN =================
  router.post("/login", (req, res) => {
    const { username, password } = req.body;
++  const clientIp = getClientIp(req);
++  const loginKey = `${clientIp}:${username || ""}`;
++
++  if (isRateLimited(loginKey)) {
++    return res.status(429).json({
++      success: false,
++      message: "Too many login attempts. Please try again later.",
++    });
++  }
  
    const sql = `
      SELECT *
@@ -239,7 +295,8 @@ index ffcb79de2fd71fecf5bcab6aec30ef6c367c2561..f97075574a4cb72d74cf7e30977833d0
      if (result.length === 0) {
        return res.status(401).json({
          success: false,
-         message: "User not found",
+-        message: "User not found",
++        message: "Invalid credentials",
        });
      }
  
@@ -258,7 +315,8 @@ index ffcb79de2fd71fecf5bcab6aec30ef6c367c2561..f97075574a4cb72d74cf7e30977833d0
      if (!match) {
        return res.status(401).json({
          success: false,
-         message: "Wrong password",
+-        message: "Wrong password",
++        message: "Invalid credentials",
        });
      }
  
@@ -275,6 +333,8 @@ index ffcb79de2fd71fecf5bcab6aec30ef6c367c2561..f97075574a4cb72d74cf7e30977833d0
        },
      );
  
++    clearRateLimit(loginKey);
++
      res.json({
        success: true,
        token,

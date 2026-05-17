@@ -1,0 +1,86 @@
+diff a/backend/routes/accounts.js b/backend/routes/accounts.js	(rejected hunks)
+@@ -59,76 +59,78 @@ router.post("/", auth, (req, res) => {
+         });
+       }
+ 
+       res.json({ success: true });
+     },
+   );
+ });
+ // =========================
+ // 🟡 CHECK DUPLICATE (ก่อนบันทึก)
+ router.post("/check-duplicate", auth, (req, res) => {
+   const {
+     username,
+     password,
+     secret_code,
+     email,
+     email_password,
+     bm,
+     id,// เผื่อใช้ตอน edit (กันชนตัวเอง)
+     remark
+    
+   } = req.body;
+ 
+   const passwordHash = hash(password || "");
+   const emailPasswordHash = hash(email_password || "");
+ 
+-  const sql = `
++  let sql = `
+     SELECT id FROM accounts
+     WHERE 
+       username = ?
+       AND password_hash = ?
+       AND secret_code = ?
+       AND email = ?
+       AND email_password_hash = ?
+       AND bm = ?
+-      ${id ? "AND id != ?" : ""}
+       AND remark = ?
+-    LIMIT 1
+   `;
+ 
+   const params = [
+     username,
+     passwordHash,
+     secret_code || "",
+     email,
+     emailPasswordHash,
+     bm,
+-    "active",
+-    remark // Assuming "active" is the default value for remark
++    remark || "",
+   ];
+ 
+-  if (id) params.push(id);
++  if (id) {
++    sql += " AND id != ?";
++    params.push(id);
++  }
++
++  sql += " LIMIT 1";
+ 
+   db.query(sql, params, (err, result) => {
+     if (err) return res.status(500).json({ message: "DB_ERROR" });
+ 
+     res.json({
+       duplicate: result.length > 0,
+     });
+   });
+ });
+ 
+ // =========================
+ // 🟢 GET ALL
+ // =========================
+ router.get("/", auth, (req, res) => {
+   const { status, search } = req.query;
+ 
+   let sql = "SELECT * FROM accounts WHERE 1=1";
+   const params = [];
+ 
+   if (status && status !== "all") {
+     sql += " AND status = ?";
+     params.push(status);
+   }
+ 
+   if (search) {
