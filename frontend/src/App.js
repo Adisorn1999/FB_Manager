@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import Login from "./pages/Login";
 
-import Dashboard from "./pages/Dashboard";
+//import Dashboard from "./pages/Dashboard";
 import Accounts from "./pages/Accounts";
 import Pages from "./pages/Pages";
 import Pixels from "./pages/Pixels";
@@ -19,7 +19,7 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* DASHBOARD */}
-        <Route
+        {/* <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
@@ -28,7 +28,7 @@ function App() {
               </Layout>
             </ProtectedRoute>
           }
-        />
+        /> */}
 
         {/* ACCOUNTS */}
         <Route
@@ -92,7 +92,7 @@ function App() {
 
 
         {/* DEFAULT */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/accounts" replace />} />
       </Routes>
       <Toaster position="top-center" />
     </BrowserRouter>

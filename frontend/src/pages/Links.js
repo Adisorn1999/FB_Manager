@@ -85,19 +85,21 @@ export default function Links() {
   });
 
   // ================= FETCH =================
-  const fetchData = useCallback(async () => {
+const fetchData = useCallback(async () => {
   try {
-
     const res = await api.get("/links", {
       params: { search },
     });
 
     setData(res.data.data || []);
-
   } catch (err) {
     console.error(err);
   }
 }, [search]);
+
+useEffect(() => {
+  fetchData();
+}, [fetchData]);
   // ================= FILTER =================
   const filtered = data.filter((row) => {
     const keyword = String(search || "")

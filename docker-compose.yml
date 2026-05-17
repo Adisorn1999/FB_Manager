@@ -4,12 +4,13 @@ services:
 
   frontend:
     build: ./frontend
-
     ports:
       - "3000:80"
 
     depends_on:
       - backend
+
+    restart: always
 
   backend:
     build: ./backend
@@ -18,7 +19,7 @@ services:
       - "5000:5000"
 
     env_file:
-      - ./backend/.env
+      - ./backend/.env.production
 
     depends_on:
       - mysql
@@ -33,9 +34,14 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root123
       MYSQL_DATABASE: fb_manager
+      MYSQL_USER: fbmanager
+      MYSQL_PASSWORD: 123456
 
     ports:
       - "3306:3306"
+
+    volumes:
+      - mysql_data:/var/lib/mysql
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
@@ -47,6 +53,10 @@ services:
 
     environment:
       PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: root123
 
     depends_on:
       - mysql
+
+volumes:
+  mysql_data:
